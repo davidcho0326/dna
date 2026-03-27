@@ -1,0 +1,2655 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brand DNA Pipeline Architecture Report</title>
+
+  <!-- Fonts -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===== CSS Reset & Variables ===== */
+    :root {
+      --bg-primary: #0A0A0A;
+      --bg-card: #1A1A1A;
+      --bg-card-hover: #222222;
+      --border-color: #222;
+      --border-subtle: #333;
+      --text-primary: #FAFAFA;
+      --text-secondary: #A0A0A0;
+      --text-muted: #666;
+      --accent: #4ADE80;
+      --accent-dim: rgba(74, 222, 128, 0.15);
+
+      /* Pipeline Color Coding */
+      --color-preset: #4ecdc4;
+      --color-dna: #a78bfa;
+      --color-image: #fbbf24;
+      --color-bgref: #fb923c;
+
+      --color-preset-dim: rgba(78, 205, 196, 0.12);
+      --color-dna-dim: rgba(167, 139, 250, 0.12);
+      --color-image-dim: rgba(251, 191, 36, 0.12);
+      --color-bgref-dim: rgba(251, 146, 60, 0.12);
+
+      --font-body: 'Pretendard Variable', 'Inter', -apple-system, sans-serif;
+      --font-display: 'Playfair Display', 'Pretendard Variable', serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+      --max-width: 1200px;
+      --section-gap: 120px;
+      --card-radius: 12px;
+      --transition: 0.3s ease;
+    }
+
+    /* Light theme overrides */
+    [data-theme="light"] {
+      --bg-primary: #F5F5F5;
+      --bg-card: #FFFFFF;
+      --bg-card-hover: #F0F0F0;
+      --border-color: #E0E0E0;
+      --border-subtle: #D0D0D0;
+      --text-primary: #1A1A1A;
+      --text-secondary: #555;
+      --text-muted: #888;
+      --accent: #16a34a;
+      --accent-dim: rgba(22, 163, 74, 0.1);
+      --color-preset-dim: rgba(78, 205, 196, 0.08);
+      --color-dna-dim: rgba(167, 139, 250, 0.08);
+      --color-image-dim: rgba(251, 191, 36, 0.08);
+      --color-bgref-dim: rgba(251, 146, 60, 0.08);
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+    }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* ===== Theme Toggle ===== */
+    .theme-toggle {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 1000;
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition);
+      backdrop-filter: blur(10px);
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent);
+      transform: scale(1.1);
+    }
+
+    /* ===== Layout ===== */
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    section {
+      padding: 80px 0;
+    }
+
+    section + section {
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* ===== Fade-up Animation ===== */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .fade-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Stagger children */
+    .fade-up.visible .stagger { opacity: 0; animation: staggerIn 0.6s ease forwards; }
+    .fade-up.visible .stagger:nth-child(1) { animation-delay: 0.1s; }
+    .fade-up.visible .stagger:nth-child(2) { animation-delay: 0.2s; }
+    .fade-up.visible .stagger:nth-child(3) { animation-delay: 0.3s; }
+    .fade-up.visible .stagger:nth-child(4) { animation-delay: 0.4s; }
+    .fade-up.visible .stagger:nth-child(5) { animation-delay: 0.5s; }
+
+    @keyframes staggerIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Typography ===== */
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.4rem, 5vw, 3.6rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .section-desc {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      max-width: 680px;
+      margin-bottom: 48px;
+    }
+
+    /* ===== Hero ===== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      padding: 80px 0;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(74, 222, 128, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      border: 1px solid var(--border-color);
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      background: var(--bg-card);
+    }
+
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .hero h1 {
+      margin-bottom: 20px;
+    }
+
+    .hero h1 .accent {
+      color: var(--accent);
+    }
+
+    .hero-subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      font-weight: 300;
+    }
+
+    .hero-date {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .hero-chips {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 40px;
+    }
+
+    .hero-chip {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid;
+    }
+
+    .hero-chip.preset  { color: var(--color-preset); border-color: var(--color-preset); background: var(--color-preset-dim); }
+    .hero-chip.dna     { color: var(--color-dna);    border-color: var(--color-dna);    background: var(--color-dna-dim); }
+    .hero-chip.image   { color: var(--color-image);  border-color: var(--color-image);  background: var(--color-image-dim); }
+    .hero-chip.bgref   { color: var(--color-bgref);  border-color: var(--color-bgref);  background: var(--color-bgref-dim); }
+
+    /* ===== Pipeline Flowchart (Section 2) ===== */
+    .pipeline-flow {
+      overflow-x: auto;
+      padding: 32px 0;
+    }
+
+    .pipeline-diagram {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      min-width: 900px;
+      position: relative;
+    }
+
+    /* Input column */
+    .pipeline-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-right: 0;
+      flex-shrink: 0;
+    }
+
+    .pipeline-node {
+      padding: 12px 20px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .pipeline-node.preset  { border-left: 4px solid var(--color-preset); }
+    .pipeline-node.dna     { border-left: 4px solid var(--color-dna); }
+    .pipeline-node.image   { border-left: 4px solid var(--color-image); }
+    .pipeline-node.bgref   { border-left: 4px solid var(--color-bgref); }
+    .pipeline-node.process { border-left: 4px solid var(--accent); background: var(--accent-dim); }
+    .pipeline-node.result  { border-left: 4px solid var(--accent); background: rgba(74, 222, 128, 0.2); border-color: var(--accent); }
+
+    /* Connector arrows */
+    .pipeline-connector {
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      flex-shrink: 0;
+    }
+
+    .pipeline-connector .arrow {
+      display: flex;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+
+    .pipeline-connector .arrow-line {
+      width: 32px;
+      height: 2px;
+      background: var(--border-subtle);
+      position: relative;
+    }
+
+    .pipeline-connector .arrow-line::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border: 5px solid transparent;
+      border-left: 6px solid var(--border-subtle);
+    }
+
+    /* Process chain */
+    .pipeline-chain {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-shrink: 0;
+    }
+
+    /* Merge bracket */
+    .pipeline-merge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      width: 40px;
+      flex-shrink: 0;
+    }
+
+    .pipeline-merge::before {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background: var(--border-subtle);
+    }
+
+    .pipeline-merge::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 2px;
+      background: var(--border-subtle);
+    }
+
+    /* Sub-label under process nodes */
+    .pipeline-sublabel {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Full flow rebuilt as a structured grid layout */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: auto 40px auto 24px auto 24px auto 24px auto 24px auto;
+      grid-template-rows: auto 16px auto 16px auto;
+      align-items: center;
+      gap: 0;
+      min-width: 1000px;
+      padding: 24px 0;
+    }
+
+    .flow-node {
+      padding: 14px 18px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    .flow-node.preset  { border-left: 4px solid var(--color-preset); color: var(--color-preset); }
+    .flow-node.dna     { border-left: 4px solid var(--color-dna); color: var(--color-dna); }
+    .flow-node.image   { border-left: 4px solid var(--color-image); color: var(--color-image); }
+    .flow-node.bgref   { border-left: 4px solid var(--color-bgref); color: var(--color-bgref); }
+    .flow-node.process { border-left: 4px solid var(--accent); color: var(--accent); }
+    .flow-node.result  { border-left: 4px solid var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+    .flow-node .sub {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .flow-arrow {
+      text-align: center;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      position: relative;
+    }
+
+    .flow-arrow::before {
+      content: '';
+      display: block;
+      height: 2px;
+      background: var(--border-subtle);
+      margin: 0 4px;
+      position: relative;
+    }
+
+    .flow-arrow::after {
+      content: '';
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 6px solid var(--border-subtle);
+    }
+
+    /* Vertical connector */
+    .flow-vert {
+      display: flex;
+      justify-content: center;
+    }
+
+    .flow-vert-line {
+      width: 2px;
+      height: 100%;
+      min-height: 16px;
+      background: var(--border-subtle);
+      position: relative;
+    }
+
+    .flow-vert-line.down::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: -4px;
+      border: 5px solid transparent;
+      border-top: 6px solid var(--border-subtle);
+    }
+
+    .flow-vert-line.up::after {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -4px;
+      border: 5px solid transparent;
+      border-bottom: 6px solid var(--border-subtle);
+    }
+
+    /* Simplified linear flow for better rendering */
+    .flow-linear {
+      padding: 40px 0;
+    }
+
+    .flow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 24px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+
+    .flow-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .fnode {
+      padding: 14px 20px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .fnode.preset  { border-left: 4px solid var(--color-preset); color: var(--color-preset); }
+    .fnode.dna     { border-left: 4px solid var(--color-dna); color: var(--color-dna); }
+    .fnode.image   { border-left: 4px solid var(--color-image); color: var(--color-image); }
+    .fnode.bgref   { border-left: 4px solid var(--color-bgref); color: var(--color-bgref); }
+    .fnode.fn      { border-left: 4px solid var(--accent); color: var(--accent); }
+    .fnode.output  { border-left: 4px solid var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+    .fnode .sub {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .farrow {
+      width: 36px;
+      height: 2px;
+      background: var(--border-subtle);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .farrow::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border: 5px solid transparent;
+      border-left: 6px solid var(--border-subtle);
+    }
+
+    /* Merge bracket for two inputs joining */
+    .flow-inputs-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .flow-inputs-group::after {
+      content: '';
+      position: absolute;
+      right: -16px;
+      top: 20%;
+      height: 60%;
+      width: 2px;
+      background: var(--border-subtle);
+    }
+
+    .flow-bracket {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-end;
+      padding-right: 16px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .flow-bracket::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 25%;
+      height: 50%;
+      width: 12px;
+      border: 2px solid var(--border-subtle);
+      border-left: none;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .fmerge-arrow {
+      width: 28px;
+      height: 2px;
+      background: var(--border-subtle);
+      position: relative;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+
+    .fmerge-arrow::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border: 5px solid transparent;
+      border-left: 6px solid var(--border-subtle);
+    }
+
+    /* Feed-in labels (annotations below main flow) */
+    .flow-annotations {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      margin-top: 8px;
+      position: relative;
+    }
+
+    .flow-feed {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      padding: 0 12px;
+    }
+
+    .flow-feed .feed-line {
+      width: 2px;
+      height: 24px;
+      background: var(--border-subtle);
+    }
+
+    .flow-feed .feed-line::after {
+      content: '';
+      position: absolute;
+      top: 23px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-bottom: 6px solid var(--border-subtle);
+    }
+
+    /* ===== Input Variable Cards (Section 3) ===== */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .input-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--card-radius);
+      padding: 32px;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .input-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+
+    .input-card:hover {
+      border-color: var(--border-subtle);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .input-card.preset::before  { background: var(--color-preset); }
+    .input-card.dna::before     { background: var(--color-dna); }
+    .input-card.image::before   { background: var(--color-image); }
+    .input-card.bgref::before   { background: var(--color-bgref); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .card-title.preset  { color: var(--color-preset); }
+    .card-title.dna     { color: var(--color-dna); }
+    .card-title.image   { color: var(--color-image); }
+    .card-title.bgref   { color: var(--color-bgref); }
+
+    .influence-badge {
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .influence-badge.preset  { background: var(--color-preset-dim); color: var(--color-preset); }
+    .influence-badge.dna     { background: var(--color-dna-dim);    color: var(--color-dna); }
+    .influence-badge.image   { background: var(--color-image-dim);  color: var(--color-image); }
+    .influence-badge.bgref   { background: var(--color-bgref-dim);  color: var(--color-bgref); }
+
+    .card-role {
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .meta-row {
+      display: flex;
+      gap: 8px;
+      font-size: 0.82rem;
+    }
+
+    .meta-label {
+      color: var(--text-muted);
+      flex-shrink: 0;
+      min-width: 70px;
+    }
+
+    .meta-value {
+      color: var(--text-secondary);
+    }
+
+    .card-determines {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .card-determines h4 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    /* Mini code block inside cards */
+    .mini-code {
+      background: #111;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 16px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+
+    [data-theme="light"] .mini-code {
+      background: #f6f6f6;
+    }
+
+    .mini-code .key   { color: var(--color-preset); }
+    .mini-code .str   { color: var(--color-image); }
+    .mini-code .comment { color: var(--text-muted); font-style: italic; }
+
+    .card-note {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03);
+      border-left: 3px solid var(--border-subtle);
+      border-radius: 0 6px 6px 0;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    [data-theme="light"] .card-note {
+      background: rgba(0,0,0,0.03);
+    }
+
+    /* ===== Bar Chart (Section 4) ===== */
+    .bar-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      max-width: 800px;
+    }
+
+    .bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bar-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .bar-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .bar-name.preset  { color: var(--color-preset); }
+    .bar-name.dna     { color: var(--color-dna); }
+    .bar-name.image   { color: var(--color-image); }
+    .bar-name.bgref   { color: var(--color-bgref); }
+
+    .bar-percent {
+      font-family: var(--font-mono);
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .bar-percent.preset  { color: var(--color-preset); }
+    .bar-percent.dna     { color: var(--color-dna); }
+    .bar-percent.image   { color: var(--color-image); }
+    .bar-percent.bgref   { color: var(--color-bgref); }
+
+    .bar-track {
+      width: 100%;
+      height: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    [data-theme="light"] .bar-track {
+      background: rgba(0,0,0,0.06);
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      width: 0;
+    }
+
+    .bar-fill.preset  { background: var(--color-preset); }
+    .bar-fill.dna     { background: var(--color-dna); }
+    .bar-fill.image   { background: var(--color-image); }
+    .bar-fill.bgref   { background: var(--color-bgref); }
+
+    .bar-fill.animate { /* JS toggles this */ }
+
+    .bar-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ===== Timeline (Section 5) ===== */
+    .timeline {
+      position: relative;
+      padding-left: 48px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 18px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--border-color);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 48px;
+    }
+
+    .timeline-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -39px;
+      top: 4px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 3px solid var(--bg-primary);
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+
+    .timeline-step {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .timeline-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .timeline-body {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--card-radius);
+      padding: 24px;
+    }
+
+    .timeline-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 0.88rem;
+    }
+
+    .timeline-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .tl-label {
+      color: var(--accent);
+      font-weight: 600;
+      flex-shrink: 0;
+      min-width: 60px;
+    }
+
+    .tl-value {
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .timeline-note {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: var(--accent-dim);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: var(--accent);
+      border: 1px solid rgba(74, 222, 128, 0.15);
+    }
+
+    .timeline-patches {
+      margin-top: 12px;
+    }
+
+    .timeline-patches h4 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .patch-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .patch-item {
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    .patch-item.yes {
+      background: rgba(74, 222, 128, 0.1);
+      color: var(--accent);
+    }
+
+    .patch-item.no {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      text-decoration: line-through;
+    }
+
+    [data-theme="light"] .patch-item.no {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    /* ===== Matrix Table (Section 6) ===== */
+    .matrix-wrapper {
+      overflow-x: auto;
+      margin-bottom: 32px;
+    }
+
+    .matrix-table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .matrix-table th,
+    .matrix-table td {
+      padding: 14px 20px;
+      text-align: center;
+      border: 1px solid var(--border-color);
+      font-size: 0.88rem;
+    }
+
+    .matrix-table th {
+      background: var(--bg-card);
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .matrix-table th.preset  { color: var(--color-preset); }
+    .matrix-table th.dna     { color: var(--color-dna); }
+    .matrix-table th.image   { color: var(--color-image); }
+    .matrix-table th.bgref   { color: var(--color-bgref); }
+
+    .matrix-table td {
+      background: var(--bg-card);
+    }
+
+    .matrix-table td.diag {
+      background: var(--bg-card-hover);
+      color: var(--text-muted);
+    }
+
+    .matrix-table td.independent {
+      color: #ef4444;
+      font-size: 1.1rem;
+    }
+
+    .matrix-table th:first-child,
+    .matrix-table td:first-child {
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .implication-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .impl-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--card-radius);
+      padding: 24px;
+    }
+
+    .impl-card h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .impl-card p {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ===== Comparison Table (Section 7) ===== */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    @media (max-width: 900px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .option-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--card-radius);
+      padding: 28px;
+      transition: all var(--transition);
+    }
+
+    .option-card:hover {
+      border-color: var(--border-subtle);
+      transform: translateY(-2px);
+    }
+
+    .option-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .option-card.a .option-label { color: var(--color-preset); }
+    .option-card.b .option-label { color: var(--color-dna); }
+    .option-card.c .option-label { color: var(--color-bgref); }
+
+    .option-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .pros-cons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .pros-cons h5 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .pros-cons h5.pro { color: var(--accent); }
+    .pros-cons h5.con { color: #ef4444; }
+    .pros-cons h5.current { color: var(--color-image); }
+
+    .pros-cons ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .pros-cons li {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      padding: 3px 0;
+      padding-left: 16px;
+      position: relative;
+      line-height: 1.5;
+    }
+
+    .pros-cons li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--border-subtle);
+    }
+
+    /* Recommendation box */
+    .recommendation {
+      background: var(--bg-card);
+      border: 1px solid var(--accent);
+      border-radius: var(--card-radius);
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .recommendation::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent);
+    }
+
+    .recommendation h3 {
+      color: var(--accent);
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+    }
+
+    .recommendation p {
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+
+    .recommendation p:last-child {
+      margin-bottom: 0;
+    }
+
+    .rec-highlight {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ===== Proposal Cards (Section 8) ===== */
+    .proposal-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .proposal-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .proposal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--card-radius);
+      padding: 32px;
+      transition: all var(--transition);
+      position: relative;
+    }
+
+    .proposal-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+    }
+
+    .proposal-number {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      opacity: 0.3;
+      margin-bottom: 8px;
+      line-height: 1;
+    }
+
+    .proposal-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .proposal-card p {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .proposal-detail {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .proposal-detail h4 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .proposal-detail ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .proposal-detail li {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      padding: 4px 0 4px 16px;
+      position: relative;
+      line-height: 1.5;
+    }
+
+    .proposal-detail li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 11px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.5;
+    }
+
+    /* ===== Footer ===== */
+    .report-footer {
+      text-align: center;
+      padding: 60px 0 40px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .report-footer p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .report-footer .brand {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ===== Scrollbar ===== */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 640px) {
+      .container {
+        padding: 0 20px;
+      }
+
+      section {
+        padding: 60px 0;
+      }
+
+      .hero {
+        min-height: 80vh;
+      }
+
+      .timeline {
+        padding-left: 36px;
+      }
+
+      .timeline::before {
+        left: 12px;
+      }
+
+      .timeline-dot {
+        left: -31px;
+      }
+
+      .patch-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Theme Toggle -->
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+    <span id="themeIcon">&#9790;</span>
+  </button>
+
+  <!-- ===================================================================
+       SECTION 1: HERO
+       =================================================================== -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content fade-up">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          fnf-brand-dna
+        </div>
+        <h1>Brand DNA Pipeline<br><span class="accent">Architecture</span></h1>
+        <p class="hero-subtitle">4가지 인풋 변수의 구조와 영향력 분석</p>
+        <p class="hero-date">2026-03-27</p>
+
+        <div class="hero-chips">
+          <span class="hero-chip preset">Brand Preset JSON</span>
+          <span class="hero-chip dna">DNA Profile</span>
+          <span class="hero-chip image">Image Inputs</span>
+          <span class="hero-chip bgref">Background Ref</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 2: PIPELINE OVERVIEW
+       =================================================================== -->
+  <section id="pipeline">
+    <div class="container">
+      <div class="fade-up">
+        <span class="section-label">Section 01</span>
+        <h2>Pipeline Overview</h2>
+        <p class="section-desc">
+          Brand DNA 파이프라인의 전체 데이터 흐름을 나타냅니다.
+          4가지 인풋 변수가 각 처리 단계에서 어떻게 합류하는지 확인할 수 있습니다.
+        </p>
+      </div>
+
+      <div class="fade-up">
+        <div class="flow-linear" style="overflow-x: auto;">
+          <!-- Main flow row -->
+          <div class="flow-row">
+            <div class="flow-bracket">
+              <div class="fnode preset">Brand Preset JSON</div>
+              <div class="fnode dna">DNA Profile</div>
+            </div>
+            <div class="fmerge-arrow"></div>
+            <div class="fnode fn">
+              build_prompt()
+              <span class="sub">VLM 착장분석 반영</span>
+            </div>
+            <div class="farrow"></div>
+            <div class="fnode fn">
+              adapt_prompt()
+              <span class="sub">DNA overlay 적용</span>
+            </div>
+            <div class="farrow"></div>
+            <div class="fnode fn">
+              korean_prompt
+              <span class="sub">재생성</span>
+            </div>
+            <div class="farrow"></div>
+            <div class="fnode fn">
+              generate_brandcut()
+              <span class="sub">Gemini API 호출</span>
+            </div>
+            <div class="farrow"></div>
+            <div class="fnode output">
+              Result Image
+            </div>
+          </div>
+
+          <!-- Annotation row showing additional inputs -->
+          <div style="display: flex; justify-content: flex-end; gap: 24px; padding-right: 120px; margin-top: 16px;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div style="width: 2px; height: 20px; background: var(--border-subtle); position: relative;">
+                <div style="position: absolute; top: -5px; left: -4px; border: 5px solid transparent; border-bottom: 6px solid var(--border-subtle);"></div>
+              </div>
+              <div class="fnode image" style="font-size: 0.78rem; padding: 8px 14px;">
+                Face / Outfit / Bg Images
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Color Legend -->
+        <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-top: 24px; padding: 16px 20px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem;">
+            <span style="width: 12px; height: 12px; border-radius: 3px; background: var(--color-preset);"></span>
+            <span style="color: var(--text-secondary);">Preset</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem;">
+            <span style="width: 12px; height: 12px; border-radius: 3px; background: var(--color-dna);"></span>
+            <span style="color: var(--text-secondary);">DNA Profile</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem;">
+            <span style="width: 12px; height: 12px; border-radius: 3px; background: var(--color-image);"></span>
+            <span style="color: var(--text-secondary);">Image Inputs</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem;">
+            <span style="width: 12px; height: 12px; border-radius: 3px; background: var(--color-bgref);"></span>
+            <span style="color: var(--text-secondary);">Background Ref</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem;">
+            <span style="width: 12px; height: 12px; border-radius: 3px; background: var(--accent);"></span>
+            <span style="color: var(--text-secondary);">Process / Output</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 3: THE 4 INPUT VARIABLES
+       =================================================================== -->
+  <section id="inputs">
+    <div class="container">
+      <div class="fade-up">
+        <span class="section-label">Section 02</span>
+        <h2>The 4 Input Variables</h2>
+        <p class="section-desc">
+          Brand DNA 파이프라인에 진입하는 4가지 독립 변수입니다.
+          각 변수의 역할, 영향력, 제어 범위를 정의합니다.
+        </p>
+      </div>
+
+      <div class="card-grid fade-up">
+        <!-- Card 1: Brand Preset JSON -->
+        <div class="input-card preset stagger">
+          <div class="card-header">
+            <span class="card-title preset">Brand Preset JSON</span>
+            <span class="influence-badge preset">~50%</span>
+          </div>
+          <p class="card-role">
+            프롬프트 전체의 뼈대 &mdash; 포즈, 표정, 배경, 톤, 컨셉 기본값을 결정합니다.
+          </p>
+          <div class="card-meta">
+            <div class="meta-row">
+              <span class="meta-label">Files</span>
+              <span class="meta-value" style="font-family: var(--font-mono); font-size: 0.78rem;">db/brand_presets/*.json</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Examples</span>
+              <span class="meta-value">mlb.json, discovery.json, stretch_angels.json</span>
+            </div>
+          </div>
+          <div class="card-determines">
+            <h4>Determines</h4>
+            <div class="tag-list">
+              <span class="tag">배경 세팅</span>
+              <span class="tag">포즈 기본값</span>
+              <span class="tag">표정 무드</span>
+              <span class="tag">색감 톤</span>
+              <span class="tag">한국어 프롬프트 텍스트</span>
+            </div>
+          </div>
+          <div class="mini-code">
+<span class="comment">// mlb.json (excerpt)</span>
+{
+  <span class="key">"brand"</span>: <span class="str">"MLB"</span>,
+  <span class="key">"background"</span>: {
+    <span class="key">"장소"</span>: <span class="str">"도시 야외"</span>,
+    <span class="key">"배경상세"</span>: <span class="str">"콘크리트 벽, 그래피티"</span>
+  },
+  <span class="key">"pose"</span>: {
+    <span class="key">"stance"</span>: <span class="str">"wide_stance"</span>,
+    <span class="key">"vibe"</span>: <span class="str">"confident, street"</span>
+  },
+  <span class="key">"korean_text"</span>: <span class="str">"파워포즈, 쿨톤..."</span>
+}
+          </div>
+        </div>
+
+        <!-- Card 2: DNA Profile -->
+        <div class="input-card dna stagger">
+          <div class="card-header">
+            <span class="card-title dna">DNA Profile</span>
+            <span class="influence-badge dna">~15%</span>
+          </div>
+          <p class="card-role">
+            Preset 위에 미세 조정 &mdash; VLM으로 레퍼런스 분석한 결과를 기반으로
+            일부 필드를 패치합니다.
+          </p>
+          <div class="card-meta">
+            <div class="meta-row">
+              <span class="meta-label">Data</span>
+              <span class="meta-value" style="font-family: var(--font-mono); font-size: 0.78rem;">dna_profiles table</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Fields</span>
+              <span class="meta-value">profile_json, centroid_vector (30d)</span>
+            </div>
+          </div>
+          <div class="card-determines">
+            <h4>Determines</h4>
+            <div class="tag-list">
+              <span class="tag">stance</span>
+              <span class="tag">arm position</span>
+              <span class="tag">표정 베이스</span>
+              <span class="tag">vibe keywords</span>
+            </div>
+          </div>
+          <div class="card-note">
+            <strong>Limitation:</strong> ~20개 이상의 프롬프트 필드 중 약 6개만 패치합니다.
+            나머지는 Brand Preset 기본값이 그대로 유지됩니다.
+          </div>
+        </div>
+
+        <!-- Card 3: Image Inputs -->
+        <div class="input-card image stagger">
+          <div class="card-header">
+            <span class="card-title image">Image Inputs</span>
+            <span class="influence-badge image">~30%</span>
+          </div>
+          <p class="card-role">
+            인물과 착장을 결정 &mdash; 결과 이미지의 "누가 뭘 입고 있는지"를 정의합니다.
+          </p>
+          <div class="card-meta">
+            <div class="meta-row">
+              <span class="meta-label">Types</span>
+              <span class="meta-value">Face image, Outfit image(s)</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Format</span>
+              <span class="meta-value">PNG/JPG, 최대 4장 outfit 이미지</span>
+            </div>
+          </div>
+          <div class="card-determines">
+            <h4>Determines</h4>
+            <div class="tag-list">
+              <span class="tag">얼굴 동일성</span>
+              <span class="tag">착장 정확도</span>
+              <span class="tag">VLM 착장 분석</span>
+            </div>
+          </div>
+          <div class="card-note">
+            <strong>Note:</strong> 포즈, 배경, 표정에는 영향을 주지 않습니다.
+            이미지가 직접 제어하는 것은 인물의 아이덴티티와 착장뿐입니다.
+          </div>
+        </div>
+
+        <!-- Card 4: Background Reference -->
+        <div class="input-card bgref stagger">
+          <div class="card-header">
+            <span class="card-title bgref">Background Reference</span>
+            <span class="influence-badge bgref">~5%</span>
+          </div>
+          <p class="card-role">
+            배경 스타일 제어 (선택적) &mdash; 제공 시 배경 환경을 오버라이드합니다.
+          </p>
+          <div class="card-meta">
+            <div class="meta-row">
+              <span class="meta-label">Modes</span>
+              <span class="meta-value" style="font-family: var(--font-mono); font-size: 0.78rem;">text_only | loose | strict</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Default</span>
+              <span class="meta-value">Preset 배경 사용 (미제공 시)</span>
+            </div>
+          </div>
+          <div class="card-determines">
+            <h4>Determines</h4>
+            <div class="tag-list">
+              <span class="tag">배경 환경</span>
+              <span class="tag">배경 스타일 참조도</span>
+            </div>
+          </div>
+          <div class="card-note" style="border-left-color: var(--color-bgref);">
+            <strong>Issue:</strong> 배경 정보가 3곳에 분산되어 있습니다 &mdash;
+            preset + VLM 분석 + 이미지. 이로 인해 충돌 가능성이 존재합니다.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 4: INFLUENCE PROPORTION
+       =================================================================== -->
+  <section id="influence">
+    <div class="container">
+      <div class="fade-up">
+        <span class="section-label">Section 03</span>
+        <h2>Influence Proportion</h2>
+        <p class="section-desc">
+          최종 결과 이미지에 대한 각 인풋 변수의 영향력 비율입니다.
+          Brand Preset이 파이프라인의 지배적 변수임을 확인할 수 있습니다.
+        </p>
+      </div>
+
+      <div class="bar-chart fade-up" id="barChart">
+        <!-- Brand Preset: 50% -->
+        <div class="bar-item stagger">
+          <div class="bar-label-row">
+            <span class="bar-name preset">Brand Preset JSON</span>
+            <span class="bar-percent preset">50%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill preset" data-width="50"></div>
+          </div>
+          <p class="bar-desc">
+            프롬프트의 골격을 결정합니다. 포즈, 표정, 배경, 톤, 네거티브, 한국어 텍스트까지
+            거의 모든 프롬프트 필드의 기본값이 여기서 나옵니다.
+          </p>
+        </div>
+
+        <!-- Image Inputs: 30% -->
+        <div class="bar-item stagger">
+          <div class="bar-label-row">
+            <span class="bar-name image">Image Inputs</span>
+            <span class="bar-percent image">30%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill image" data-width="30"></div>
+          </div>
+          <p class="bar-desc">
+            "누가" "뭘 입고" 있는지를 결정합니다. Gemini가 직접 참조하는 이미지이므로
+            텍스트 프롬프트와 별개로 강한 영향력을 가집니다.
+          </p>
+        </div>
+
+        <!-- DNA Profile: 15% -->
+        <div class="bar-item stagger">
+          <div class="bar-label-row">
+            <span class="bar-name dna">DNA Profile</span>
+            <span class="bar-percent dna">15%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill dna" data-width="15"></div>
+          </div>
+          <p class="bar-desc">
+            Preset 위에 미세 조정하지만, ~20개 필드 중 약 6개만 패치합니다.
+            나머지는 Preset 기본값이 그대로 유지되어 영향력이 제한적입니다.
+          </p>
+        </div>
+
+        <!-- Background Ref: 5% -->
+        <div class="bar-item stagger">
+          <div class="bar-label-row">
+            <span class="bar-name bgref">Background Ref</span>
+            <span class="bar-percent bgref">5%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill bgref" data-width="5"></div>
+          </div>
+          <p class="bar-desc">
+            선택적 입력이며, 배경 한 가지만 제어합니다.
+            미제공 시 Preset 배경이 사용되므로 전체 영향력은 낮습니다.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 5: STEP-BY-STEP INPUT FLOW
+       =================================================================== -->
+  <section id="flow">
+    <div class="container">
+      <div class="fade-up">
+        <span class="section-label">Section 04</span>
+        <h2>Step-by-Step Input Flow</h2>
+        <p class="section-desc">
+          각 처리 단계에서 어떤 인풋이 진입하고, 어떤 아웃풋이 생성되는지
+          순서대로 추적합니다.
+        </p>
+      </div>
+
+      <div class="timeline fade-up">
+        <!-- Step 1: build_prompt() -->
+        <div class="timeline-item stagger">
+          <div class="timeline-dot"></div>
+          <div class="timeline-step">STEP 01</div>
+          <div class="timeline-title">build_prompt()</div>
+          <div class="timeline-body">
+            <div class="timeline-row">
+              <span class="tl-label">Input</span>
+              <span class="tl-value">Brand Preset JSON + VLM 착장분석 결과</span>
+            </div>
+            <div class="timeline-row">
+              <span class="tl-label">Output</span>
+              <span class="tl-value">전체 프롬프트 JSON (포즈, 표정, 배경, 착장, 모델 등)</span>
+            </div>
+            <div class="timeline-note">
+              이 시점에서 <code>_korean_prompt</code>도 생성됩니다 (preset 텍스트 기반).
+              VLM 착장 분석 결과가 outfit 필드에 반영됩니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: VLM Analysis -->
+        <div class="timeline-item stagger">
+          <div class="timeline-dot"></div>
+          <div class="timeline-step">STEP 02</div>
+          <div class="timeline-title">VLM Analysis</div>
+          <div class="timeline-body">
+            <div class="timeline-row">
+              <span class="tl-label">Input</span>
+              <span class="tl-value">Outfit image &rarr; 착장 분석 &nbsp;|&nbsp; Background image &rarr; 배경 분석</span>
+            </div>
+            <div class="timeline-row">
+              <span class="tl-label">Output</span>
+              <span class="tl-value">착장 설명 텍스트, 배경 설명 텍스트 (user_options에 전달)</span>
+            </div>
+            <div class="timeline-note">
+              배경 분석은 <code>text_only</code> 모드에서만 프롬프트에 반영됩니다.
+              <code>loose</code>/<code>strict</code> 모드에서는 이미지 자체가 참조됩니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: adapt_prompt() -->
+        <div class="timeline-item stagger">
+          <div class="timeline-dot"></div>
+          <div class="timeline-step">STEP 03</div>
+          <div class="timeline-title">adapt_prompt()</div>
+          <div class="timeline-body">
+            <div class="timeline-row">
+              <span class="tl-label">Input</span>
+              <span class="tl-value">DNA Profile (pose_distribution, expression_distribution, top_vibe_keywords)</span>
+            </div>
+            <div class="timeline-row">
+              <span class="tl-label">Output</span>
+              <span class="tl-value">일부 필드 패치된 프롬프트 JSON</span>
+            </div>
+
+            <div class="timeline-patches">
+              <h4>Patched Fields</h4>
+              <div class="patch-grid">
+                <span class="patch-item yes">stance</span>
+                <span class="patch-item yes">왼팔 (left_arm)</span>
+                <span class="patch-item yes">오른팔 (right_arm)</span>
+                <span class="patch-item yes">표정.베이스</span>
+                <span class="patch-item yes">표정.입</span>
+                <span class="patch-item yes">표정.시선</span>
+                <span class="patch-item yes">주제.mood</span>
+                <span class="patch-item no">다리 (legs)</span>
+                <span class="patch-item no">힙 (hips)</span>
+                <span class="patch-item no">눈썹 (eyebrows)</span>
+                <span class="patch-item no">배경 (background)</span>
+                <span class="patch-item no">톤 (tone)</span>
+                <span class="patch-item no">네거티브 (negative)</span>
+                <span class="patch-item no">모든 텍스트</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Korean Prompt Regeneration -->
+        <div class="timeline-item stagger">
+          <div class="timeline-dot"></div>
+          <div class="timeline-step">STEP 04</div>
+          <div class="timeline-title">Korean Prompt Regeneration</div>
+          <div class="timeline-body">
+            <div class="timeline-row">
+              <span class="tl-label">Input</span>
+              <span class="tl-value">Adapted JSON + _dna_brand field</span>
+            </div>
+            <div class="timeline-row">
+              <span class="tl-label">Output</span>
+              <span class="tl-value">재생성된 _korean_prompt</span>
+            </div>
+            <div class="timeline-note">
+              Preset의 <code>korean_text</code>에서 브랜드별 동적 텍스트를 로드합니다.<br>
+              <strong>MLB</strong> &rarr; "파워포즈, 쿨톤" &nbsp;|&nbsp;
+              <strong>Discovery</strong> &rarr; "자연스러운 포즈, 자연광"
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: generate_brandcut() -->
+        <div class="timeline-item stagger">
+          <div class="timeline-dot"></div>
+          <div class="timeline-step">STEP 05</div>
+          <div class="timeline-title">generate_brandcut()</div>
+          <div class="timeline-body">
+            <div class="timeline-row">
+              <span class="tl-label">Input</span>
+              <span class="tl-value">최종 프롬프트 + Face/Outfit/Background 이미지</span>
+            </div>
+            <div class="timeline-row">
+              <span class="tl-label">Output</span>
+              <span class="tl-value">생성 이미지 (Gemini API)</span>
+            </div>
+
+            <div class="timeline-patches">
+              <h4>Gemini API Parts 순서</h4>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <span class="patch-item yes" style="font-size: 0.75rem;">1. Pose ref</span>
+                <span class="patch-item yes" style="font-size: 0.75rem;">2. Korean prompt</span>
+                <span class="patch-item yes" style="font-size: 0.75rem;">3. JSON</span>
+                <span class="patch-item yes" style="font-size: 0.75rem;">4. Style ref</span>
+                <span class="patch-item yes" style="font-size: 0.75rem;">5. Background ref</span>
+                <span class="patch-item yes" style="font-size: 0.75rem;">6. Pose/Expression</span>
+                <span class="patch-item yes" style="font-size: 0.75rem;">7. Outfit details</span>
+                <span class="patch-item yes" style="font-size: 0.75rem;">8. Face images</span>
+                <span class="patch-item yes" style="font-size: 0.75rem;">9. Outfit images</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 5.5: REAL CASE STUDY
+       =================================================================== -->
+  <section id="case-study" style="background:var(--bg-secondary)">
+    <div class="container">
+      <div class="section-eyebrow fade-up">Real Example</div>
+      <h2 class="fade-up" style="font-family:'Playfair Display',serif;font-size:clamp(1.8rem,3.5vw,2.8rem);margin-bottom:0.5rem">
+        Case Study — <em>MLB DNA Generation</em>
+      </h2>
+      <p class="fade-up" style="color:var(--text-secondary);max-width:700px;margin:0 auto 3rem">
+        실제 MLB DNA 프로필로 생성한 이미지의 전체 데이터 흐름을 추적합니다.
+      </p>
+
+      <!-- Result Image + Meta -->
+      <div class="fade-up" style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:3rem;align-items:start">
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;overflow:hidden">
+          <img src="images/dna_brandcut_001.png"
+               style="width:100%;display:block" alt="MLB DNA Generation Result">
+          <div style="padding:16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="background:rgba(78,205,196,0.15);color:#4ecdc4;padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:600">DNA</span>
+              <span style="color:var(--text-secondary);font-size:0.85rem">MLB · MLB 겨울 화보 (3장)</span>
+            </div>
+            <div style="display:flex;gap:12px;font-size:0.8rem;color:var(--text-muted)">
+              <span>Score: <strong style="color:#4ADE80">96.0</strong></span>
+              <span>Grade: <strong style="color:#4ADE80">S</strong></span>
+              <span>Profile: dna_mlb_20260326_205451</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <!-- Input Cards -->
+          <div style="background:var(--bg-card);border-left:3px solid #fbbf24;border-radius:8px;padding:14px">
+            <div style="color:#fbbf24;font-size:0.75rem;font-weight:600;margin-bottom:4px">INPUT: 인물 이미지</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <img src="images/레퍼런스 인물1.png" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #333">
+              <code style="color:var(--text-secondary);font-size:0.8rem">레퍼런스 인물1.png</code>
+            </div>
+          </div>
+          <div style="background:var(--bg-card);border-left:3px solid #fbbf24;border-radius:8px;padding:14px">
+            <div style="color:#fbbf24;font-size:0.75rem;font-weight:600;margin-bottom:4px">INPUT: 착장 이미지</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <img src="images/attachment21f35c18-76b3-42eb-8f4.jpg" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #333">
+              <code style="color:var(--text-secondary);font-size:0.8rem">MLB 착장 레퍼런스</code>
+            </div>
+          </div>
+          <div style="background:var(--bg-card);border-left:3px solid #fb923c;border-radius:8px;padding:14px">
+            <div style="color:#fb923c;font-size:0.75rem;font-weight:600;margin-bottom:4px">INPUT: Background Reference</div>
+            <code style="color:var(--text-muted);font-size:0.8rem">없음 (Preset 기본 배경 사용)</code>
+          </div>
+          <div style="background:var(--bg-card);border-left:3px solid #a78bfa;border-radius:8px;padding:14px">
+            <div style="color:#a78bfa;font-size:0.75rem;font-weight:600;margin-bottom:4px">DNA Profile</div>
+            <div style="color:var(--text-secondary);font-size:0.8rem">
+              Brand: MLB · Strength: 0.8<br>
+              Vibe: cool, street, chic, unbothered, mysterious
+            </div>
+          </div>
+          <div style="background:var(--bg-card);border-left:3px solid #4ecdc4;border-radius:8px;padding:14px">
+            <div style="color:#4ecdc4;font-size:0.75rem;font-weight:600;margin-bottom:4px">Brand Preset</div>
+            <code style="color:var(--text-secondary);font-size:0.8rem">db/brand_presets/mlb.json</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step-by-step data flow -->
+      <h3 class="fade-up" style="font-size:1.3rem;margin-bottom:1.5rem;color:var(--text-primary)">데이터 흐름 추적</h3>
+
+      <!-- Step 1 -->
+      <div class="fade-up" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="background:#4ecdc4;color:#000;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem">1</span>
+          <span style="font-weight:600">build_prompt()</span>
+          <span style="color:var(--text-muted);font-size:0.8rem">— Preset 기본값으로 뼈대 생성</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.8rem">
+          <div>
+            <div style="color:#4ecdc4;font-weight:600;margin-bottom:4px">Pose (from mlb.json)</div>
+            <div style="color:var(--text-secondary)">stance: "power stance, standing tall..."<br>왼팔: "hand on hip, elbow pointing outward"<br>힙: "weight shifted, S-curve silhouette"</div>
+          </div>
+          <div>
+            <div style="color:#4ecdc4;font-weight:600;margin-bottom:4px">Expression (from mlb.json)</div>
+            <div style="color:var(--text-secondary)">베이스: "fierce"<br>바이브: "confident_chic"<br>시선: "direct_intense"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="fade-up" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="background:#a78bfa;color:#000;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem">2</span>
+          <span style="font-weight:600">adapt_prompt()</span>
+          <span style="color:var(--text-muted);font-size:0.8rem">— DNA 프로필이 일부 필드 패치</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.8rem">
+          <div>
+            <div style="color:#4ADE80;font-weight:600;margin-bottom:4px">패치된 필드 ✓</div>
+            <div style="color:var(--text-secondary)">
+              stance: "power stance" → <strong style="color:#a78bfa">"confident"</strong><br>
+              왼팔: "hand on hip" → <strong style="color:#a78bfa">"arms relaxed"</strong><br>
+              표정.베이스: "fierce" → <strong style="color:#a78bfa">"cool"</strong><br>
+              시선: "direct_intense" → <strong style="color:#a78bfa">"looking_past"</strong>
+            </div>
+          </div>
+          <div>
+            <div style="color:#F87171;font-weight:600;margin-bottom:4px">패치 안 된 필드 ✗</div>
+            <div style="color:var(--text-muted)">다리, 힙, 눈썹, 배경, 톤, 네거티브<br>→ Preset 기본값 그대로 유지</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="fade-up" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="background:#4ecdc4;color:#000;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem">3</span>
+          <span style="font-weight:600">Korean Prompt 재생성</span>
+          <span style="color:var(--text-muted);font-size:0.8rem">— adapted JSON 기반</span>
+        </div>
+        <div style="background:#111;border-radius:8px;padding:14px;font-size:0.8rem;color:var(--text-secondary);line-height:1.6;font-family:monospace;white-space:pre-wrap;max-height:200px;overflow-y:auto">이 얼굴의 한국인 여성 모델.
+
+[착장]
+크롭 후드 윈드브레이커 자켓, 더스티 핑크...
+
+[순간]
+도시 스트릿 또는 미니멀 스튜디오에서 서 있는 자연스러운 순간.
+hip_confident 분위기의 표정.
+패션 매거진 에디토리얼 화보 같은 분위기.
+MLB 웰니스 액티브 라이프스타일 - 기능성이 패션이 되는 프리미엄 스트릿.
+
+[필수]
+강렬한 눈빛으로 카메라 응시.
+도도하면서도 힙한 자신감 있는 표정.
+힙한 액티브 포즈.
+클린한 도시 배경.
+뉴트럴쿨 색감 유지.</div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="fade-up" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="background:#fbbf24;color:#000;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem">4</span>
+          <span style="font-weight:600">generate_brandcut()</span>
+          <span style="color:var(--text-muted);font-size:0.8rem">— Gemini API에 전송</span>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-secondary)">
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 12px">
+            <span style="color:#4ecdc4">Part 1:</span><span>Korean Prompt 텍스트 (위 내용)</span>
+            <span style="color:#4ecdc4">Part 2:</span><span>JSON 전체 (참조용)</span>
+            <span style="color:#4ecdc4">Part 3:</span><span>포즈/표정/촬영 디테일 강조</span>
+            <span style="color:#4ecdc4">Part 4:</span><span>착장 디테일 (VLM 분석 결과)</span>
+            <span style="color:#fbbf24">Part 5:</span><span>Face 이미지 (img_859f35ce) + "이 얼굴 100% 동일하게"</span>
+            <span style="color:#fbbf24">Part 6:</span><span>Outfit 이미지 (img_05525083) + "착장 정확히 재현"</span>
+            <span style="color:var(--text-muted)">Part 7:</span><span>Background Reference — 없음 (Preset 배경 텍스트만)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="fade-up" style="background:var(--bg-card);border:1px solid #4ADE80;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="background:#4ADE80;color:#000;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem">✓</span>
+          <span style="font-weight:600">Result</span>
+          <span style="color:#4ADE80;font-size:0.8rem">Score 96.0 / Grade S</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:0.8rem">
+          <div>
+            <div style="color:#4ecdc4;font-weight:600;margin-bottom:4px">Preset 반영</div>
+            <div style="color:var(--text-secondary)">배경: 도시 콘크리트<br>톤: 쿨 뉴트럴<br>네거티브: 골든아워 차단</div>
+          </div>
+          <div>
+            <div style="color:#a78bfa;font-weight:600;margin-bottom:4px">DNA 반영</div>
+            <div style="color:var(--text-secondary)">포즈: confident (power stance 약화)<br>표정: cool (fierce 약화)<br>시선: looking past</div>
+          </div>
+          <div>
+            <div style="color:#fbbf24;font-weight:600;margin-bottom:4px">Image 반영</div>
+            <div style="color:var(--text-secondary)">얼굴: 동일 인물<br>착장: NY 원피스 정확 재현<br>가방: 블랙 토트백</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 6: 향후 발전 방향 (FUTURE DEVELOPMENT DIRECTION)
+       =================================================================== -->
+  <section id="future-direction">
+    <div class="container">
+      <div class="fade-up">
+        <span class="section-label">Section 06</span>
+        <h2>향후 발전 방향</h2>
+        <p class="section-desc" style="font-size:1.1rem;color:var(--accent);font-weight:500;margin-bottom:12px">
+          DNA 시스템의 핵심 의사결정 과제
+        </p>
+        <p class="section-desc">
+          Brand DNA 파이프라인이 더 정교하게 브랜드 톤을 반영하려면, 아래 핵심 과제들에 대한 의사결정이 필요합니다.
+        </p>
+      </div>
+
+      <!-- ─── 6.1: DNA 카테고리 정의 ─── -->
+      <div class="fade-up" style="border-left:4px solid var(--color-dna);padding-left:28px;margin-bottom:64px">
+        <h3 style="font-size:1.3rem;margin-bottom:6px;color:var(--color-dna)">6.1 &mdash; DNA 카테고리 정의</h3>
+        <p style="color:var(--text-secondary);margin-bottom:24px">
+          현재 DNA는 3개 카테고리(pose, expression, vibe)에서 30개 차원만 추출합니다.
+          더 많은 카테고리를 추가해야 할까요?
+        </p>
+
+        <div style="overflow-x:auto;margin-bottom:24px">
+          <table style="width:100%;border-collapse:collapse;font-size:0.88rem">
+            <thead>
+              <tr style="border-bottom:2px solid var(--border-subtle)">
+                <th style="text-align:left;padding:12px 16px;color:var(--text-muted);font-weight:600">Category</th>
+                <th style="text-align:center;padding:12px 16px;color:var(--text-muted);font-weight:600;min-width:80px">현재 포함</th>
+                <th style="text-align:left;padding:12px 16px;color:var(--text-muted);font-weight:600">Potential Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border-color)">
+                <td style="padding:12px 16px;font-weight:600;color:var(--text-primary)">Pose (포즈)</td>
+                <td style="padding:12px 16px;text-align:center;color:#4ADE80;font-size:1.1rem">&#10003;</td>
+                <td style="padding:12px 16px;color:var(--text-secondary)">arm position, stance, energy level</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-color)">
+                <td style="padding:12px 16px;font-weight:600;color:var(--text-primary)">Expression (표정)</td>
+                <td style="padding:12px 16px;text-align:center;color:#4ADE80;font-size:1.1rem">&#10003;</td>
+                <td style="padding:12px 16px;color:var(--text-secondary)">mouth, eyes, intensity</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-color)">
+                <td style="padding:12px 16px;font-weight:600;color:var(--text-primary)">Vibe (분위기)</td>
+                <td style="padding:12px 16px;text-align:center;color:#4ADE80;font-size:1.1rem">&#10003;</td>
+                <td style="padding:12px 16px;color:var(--text-secondary)">keywords like cool, chic, etc.</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-color);background:var(--color-dna-dim)">
+                <td style="padding:12px 16px;font-weight:600;color:var(--text-primary)">Background (배경)</td>
+                <td style="padding:12px 16px;text-align:center;color:var(--text-muted);font-size:1.1rem">&#10060;</td>
+                <td style="padding:12px 16px;color:var(--text-secondary)">urban / nature / studio preference from references</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-color);background:var(--color-dna-dim)">
+                <td style="padding:12px 16px;font-weight:600;color:var(--text-primary)">Composition (구도)</td>
+                <td style="padding:12px 16px;text-align:center;color:var(--text-muted);font-size:1.1rem">&#10060;</td>
+                <td style="padding:12px 16px;color:var(--text-secondary)">camera angle, framing, depth of field</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-color);background:var(--color-dna-dim)">
+                <td style="padding:12px 16px;font-weight:600;color:var(--text-primary)">Styling (스타일링)</td>
+                <td style="padding:12px 16px;text-align:center;color:var(--text-muted);font-size:1.1rem">&#10060;</td>
+                <td style="padding:12px 16px;color:var(--text-secondary)">fit preference, layering style, color palette</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-color);background:var(--color-dna-dim)">
+                <td style="padding:12px 16px;font-weight:600;color:var(--text-primary)">Mood/Lighting (무드/조명)</td>
+                <td style="padding:12px 16px;text-align:center;color:var(--text-muted);font-size:1.1rem">&#10060;</td>
+                <td style="padding:12px 16px;color:var(--text-secondary)">warm / cool tone, golden hour, studio light</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-color);background:var(--color-dna-dim)">
+                <td style="padding:12px 16px;font-weight:600;color:var(--text-primary)">Accessories (악세서리)</td>
+                <td style="padding:12px 16px;text-align:center;color:var(--text-muted);font-size:1.1rem">&#10060;</td>
+                <td style="padding:12px 16px;color:var(--text-secondary)">earrings, sunglasses, bags preference</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--card-radius);padding:20px">
+          <h4 style="font-size:0.85rem;font-weight:600;color:var(--color-dna);margin-bottom:8px">Trade-off</h4>
+          <p style="color:var(--text-secondary);font-size:0.9rem">
+            카테고리가 늘어날수록 DNA가 더 정밀해지지만, 더 많은 레퍼런스 이미지가 필요하고 추출 시간이 길어집니다.
+            현재 3장 레퍼런스 &times; 3 카테고리 구조에서, 8 카테고리로 확장하면 정확한 추출을 위해 최소 5~8장의 레퍼런스가 필요할 수 있습니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- ─── 6.2: DNA Profile vs Brand Preset 충돌 해결 ─── -->
+      <div class="fade-up" style="border-left:4px solid var(--color-preset);padding-left:28px;margin-bottom:64px">
+        <h3 style="font-size:1.3rem;margin-bottom:6px;color:var(--color-preset)">6.2 &mdash; DNA Profile vs Brand Preset 충돌 해결</h3>
+        <p style="color:var(--text-secondary);margin-bottom:24px">
+          DNA Profile과 Brand Preset이 충돌할 때, 어느 쪽이 우선하는가?
+          이것이 시스템의 <strong style="color:var(--text-primary)">핵심 설계 결정(KEY decision point)</strong>입니다.
+        </p>
+
+        <!-- Conflict example -->
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch;margin-bottom:32px">
+          <div style="background:var(--color-preset-dim);border:1px solid var(--color-preset);border-radius:var(--card-radius);padding:20px">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--color-preset);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Brand Preset (mlb.json)</div>
+            <div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-secondary);line-height:1.8">
+              <div>표정.베이스 = <code style="color:var(--color-preset)">"fierce"</code></div>
+              <div>stance = <code style="color:var(--color-preset)">"power stance"</code></div>
+              <div>배경 = <code style="color:var(--color-preset)">"콘크리트"</code></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:1.6rem;font-weight:700">vs</div>
+          <div style="background:var(--color-dna-dim);border:1px solid var(--color-dna);border-radius:var(--card-radius);padding:20px">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--color-dna);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">DNA Profile (from 3 references)</div>
+            <div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-secondary);line-height:1.8">
+              <div>표정.베이스 &rarr; <code style="color:var(--color-dna)">"natural"</code> <span style="color:var(--text-muted);font-size:0.75rem">(inferred from vibe)</span></div>
+              <div>stance = <code style="color:var(--color-dna)">"relaxed"</code></div>
+              <div>배경 = <span style="color:var(--text-muted);font-style:italic">(not extracted)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <p style="color:var(--text-secondary);font-size:0.92rem;margin-bottom:24px">
+          <strong style="color:var(--text-primary)">현재 동작:</strong> DNA가 패치하는 필드는 DNA가 우선하고, 나머지는 Preset이 담당합니다.
+          이 균형이 올바른 것인가?
+        </p>
+
+        <!-- 3 Weight Models -->
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;margin-bottom:32px">
+          <!-- Model A -->
+          <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--card-radius);padding:20px">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--color-preset);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Model A: Preset-first</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px">현재 방식 (~85/15)</div>
+            <div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:8px">
+              <div style="width:85%;background:var(--color-preset)"></div>
+              <div style="width:15%;background:var(--color-dna)"></div>
+            </div>
+            <p style="font-size:0.82rem;color:var(--text-muted)">Preset이 권위 소스, DNA는 미세 조정용</p>
+          </div>
+          <!-- Model B -->
+          <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--card-radius);padding:20px">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--color-dna);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Model B: DNA-first</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px">DNA 중심 (~30/70)</div>
+            <div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:8px">
+              <div style="width:30%;background:var(--color-preset)"></div>
+              <div style="width:70%;background:var(--color-dna)"></div>
+            </div>
+            <p style="font-size:0.82rem;color:var(--text-muted)">DNA가 권위 소스, Preset은 빈 필드만 채움</p>
+          </div>
+          <!-- Model C -->
+          <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--card-radius);padding:20px;border:1px solid var(--accent)">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Model C: Configurable</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px">카테고리별 강도 설정</div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
+              <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem">
+                <span style="color:var(--text-muted);min-width:50px">Pose</span>
+                <div style="flex:1;display:flex;height:8px;border-radius:4px;overflow:hidden">
+                  <div style="width:40%;background:var(--color-preset)"></div>
+                  <div style="width:60%;background:var(--color-dna)"></div>
+                </div>
+                <span style="color:var(--text-muted);font-family:var(--font-mono);font-size:0.72rem">0.6</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem">
+                <span style="color:var(--text-muted);min-width:50px">표정</span>
+                <div style="flex:1;display:flex;height:8px;border-radius:4px;overflow:hidden">
+                  <div style="width:20%;background:var(--color-preset)"></div>
+                  <div style="width:80%;background:var(--color-dna)"></div>
+                </div>
+                <span style="color:var(--text-muted);font-family:var(--font-mono);font-size:0.72rem">0.8</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem">
+                <span style="color:var(--text-muted);min-width:50px">배경</span>
+                <div style="flex:1;display:flex;height:8px;border-radius:4px;overflow:hidden">
+                  <div style="width:90%;background:var(--color-preset)"></div>
+                  <div style="width:10%;background:var(--color-dna)"></div>
+                </div>
+                <span style="color:var(--text-muted);font-family:var(--font-mono);font-size:0.72rem">0.1</span>
+              </div>
+            </div>
+            <p style="font-size:0.82rem;color:var(--text-muted)">유저가 카테고리별 강도 슬라이더(0.0~1.0) 설정</p>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--card-radius);padding:20px">
+          <h4 style="font-size:0.85rem;font-weight:600;color:var(--accent);margin-bottom:8px">Note</h4>
+          <p style="color:var(--text-secondary);font-size:0.9rem">
+            <code>dna_strength</code> 파라미터는 이미 존재합니다 (기본값 0.8).
+            하지만 현재는 모든 카테고리에 균일하게 적용됩니다.
+            카테고리별 강도 설정(per-category strength)이 가능해지면 훨씬 정밀한 제어가 됩니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- ─── 6.3: 변수 간 독립성과 연결 ─── -->
+      <div class="fade-up" id="independence" style="border-left:4px solid var(--color-image);padding-left:28px;margin-bottom:64px">
+        <h3 style="font-size:1.3rem;margin-bottom:6px;color:var(--color-image)">6.3 &mdash; 변수 간 독립성과 연결</h3>
+        <p style="color:var(--text-secondary);margin-bottom:24px">
+          4가지 인풋 변수 간의 상호 참조 관계를 분석합니다.
+          현재 구조에서 모든 변수는 완전히 독립적입니다. 연결해야 할까요?
+        </p>
+
+        <div class="matrix-wrapper" style="margin-bottom:24px">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th class="preset">Preset</th>
+                <th class="dna">DNA</th>
+                <th class="image">Image</th>
+                <th class="bgref">Bg Ref</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="preset" style="color: var(--color-preset);">Preset</td>
+                <td class="diag">&mdash;</td>
+                <td class="independent">&#10060;</td>
+                <td class="independent">&#10060;</td>
+                <td class="independent">&#10060;</td>
+              </tr>
+              <tr>
+                <td class="dna" style="color: var(--color-dna);">DNA</td>
+                <td class="independent">&#10060;</td>
+                <td class="diag">&mdash;</td>
+                <td class="independent">&#10060;</td>
+                <td class="independent">&#10060;</td>
+              </tr>
+              <tr>
+                <td class="image" style="color: var(--color-image);">Image</td>
+                <td class="independent">&#10060;</td>
+                <td class="independent">&#10060;</td>
+                <td class="diag">&mdash;</td>
+                <td class="independent">&#10060;</td>
+              </tr>
+              <tr>
+                <td class="bgref" style="color: var(--color-bgref);">Bg Ref</td>
+                <td class="independent">&#10060;</td>
+                <td class="independent">&#10060;</td>
+                <td class="independent">&#10060;</td>
+                <td class="diag">&mdash;</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="implication-cards" style="margin-bottom:24px">
+          <div class="impl-card">
+            <h4>장점: 모듈성</h4>
+            <p>
+              각 변수를 독립적으로 변경할 수 있습니다.
+              Preset을 바꿔도 DNA Profile에 영향이 없고,
+              이미지를 교체해도 프롬프트 구조는 유지됩니다.
+            </p>
+          </div>
+          <div class="impl-card">
+            <h4>장점: 테스트 용이성</h4>
+            <p>
+              단일 변수만 변경하고 나머지를 고정하여
+              A/B 테스트가 가능합니다.
+              변수 간 상호작용 없이 개별 효과를 측정할 수 있습니다.
+            </p>
+          </div>
+          <div class="impl-card">
+            <h4>단점: 충돌 가능성</h4>
+            <p>
+              독립적이기 때문에 변수 간 모순이 발생할 수 있습니다.
+              예: DNA가 "relaxed" 포즈를 원하지만 Preset은 "power_stance"를 지정.
+              현재 이 충돌을 감지하는 로직이 없습니다.
+            </p>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--card-radius);padding:20px">
+          <h4 style="font-size:0.85rem;font-weight:600;color:var(--color-image);margin-bottom:8px">연결 가능성</h4>
+          <p style="color:var(--text-secondary);font-size:0.9rem">
+            현재 4개 변수는 모두 독립적입니다. 하지만 연결하면 더 스마트해질 수 있습니다.
+            예를 들어: DNA Profile이 어떤 Preset 기본값을 오버라이드할지 직접 지시하거나,
+            이미지 분석(VLM)이 생성 결과가 DNA를 잘 반영했는지 검증하는 피드백 루프를 구성할 수 있습니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- ─── 6.4: 배경 인풋의 소속 ─── -->
+      <div class="fade-up" id="background" style="border-left:4px solid var(--color-bgref);padding-left:28px;margin-bottom:32px">
+        <h3 style="font-size:1.3rem;margin-bottom:6px;color:var(--color-bgref)">6.4 &mdash; 배경 인풋의 소속</h3>
+        <p style="color:var(--text-secondary);margin-bottom:24px">
+          배경 정보의 소스를 어디에 위치시킬 것인지에 대한 아키텍처 결정입니다.
+          이것은 6.1의 카테고리 정의 문제의 구체적 사례이기도 합니다 &mdash;
+          배경이 DNA에 포함되어야 하는가, Preset에 남아야 하는가?
+        </p>
+
+        <div class="comparison-grid" style="margin-bottom:24px">
+          <!-- Option A -->
+          <div class="option-card a stagger">
+            <div class="option-label">Option A</div>
+            <div class="option-title">배경을 Brand Preset에 넣기</div>
+            <div class="pros-cons">
+              <div>
+                <h5 class="pro">Pros</h5>
+                <ul>
+                  <li>브랜드 톤과 일관성 보장</li>
+                  <li>관리 쉬움 (JSON 파일 하나)</li>
+                  <li>새 브랜드 추가 시 자동 배경</li>
+                </ul>
+              </div>
+              <div>
+                <h5 class="con">Cons</h5>
+                <ul>
+                  <li>유저별 커스텀 불가</li>
+                  <li>유연성 떨어짐</li>
+                </ul>
+              </div>
+              <div>
+                <h5 class="current">Current Status</h5>
+                <ul>
+                  <li><code>preset.background.장소</code> / <code>배경상세</code> (이미 존재)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Option B -->
+          <div class="option-card b stagger">
+            <div class="option-label">Option B</div>
+            <div class="option-title">배경을 DNA Profile에 넣기</div>
+            <div class="pros-cons">
+              <div>
+                <h5 class="pro">Pros</h5>
+                <ul>
+                  <li>유저 레퍼런스에서 학습</li>
+                  <li>더 세밀한 배경 DNA</li>
+                </ul>
+              </div>
+              <div>
+                <h5 class="con">Cons</h5>
+                <ul>
+                  <li>레퍼런스에 배경이 명확히 없으면 추출 어려움</li>
+                  <li>카테고리 추가 필요 (현재 pose/expression/vibe만)</li>
+                </ul>
+              </div>
+              <div>
+                <h5 class="current">Current Status</h5>
+                <ul>
+                  <li>DNA에 배경 카테고리 없음</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Option C -->
+          <div class="option-card c stagger">
+            <div class="option-label">Option C</div>
+            <div class="option-title">현재 구조 유지 (하이브리드)</div>
+            <div class="pros-cons">
+              <div>
+                <h5 class="pro">Pros</h5>
+                <ul>
+                  <li>Preset = 기본 배경</li>
+                  <li>Background Ref = 유저 오버라이드</li>
+                  <li>기존 코드 변경 없음</li>
+                </ul>
+              </div>
+              <div>
+                <h5 class="con">Cons</h5>
+                <ul>
+                  <li>3곳 분산 (preset + VLM + 이미지)</li>
+                  <li>우선순위 불명확</li>
+                  <li>충돌 시 디버깅 어려움</li>
+                </ul>
+              </div>
+              <div>
+                <h5 class="current">Current Status</h5>
+                <ul>
+                  <li>현재 운영 중인 방식</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="recommendation">
+          <h3>Recommendation</h3>
+          <p>
+            <span class="rec-highlight">Option A + C 혼합을 권장합니다.</span>
+            Brand Preset을 배경의 <strong>단일 소스 오브 트루스(Single Source of Truth)</strong>로 설정하되,
+            Background Ref가 제공된 경우에만 명시적으로 오버라이드하는 구조입니다.
+          </p>
+          <p>
+            구체적으로는: (1) Preset의 <code>background</code> 필드가 기본값이 됩니다.
+            (2) Background Ref 이미지가 <code>strict</code> 또는 <code>loose</code> 모드로 제공되면
+            Preset 배경을 완전 대체합니다.
+            (3) VLM 배경 분석은 프롬프트 보강용으로만 사용하고,
+            최종 배경 결정 로직에서는 제외합니다.
+          </p>
+          <p>
+            이를 통해 배경 정보의 소스가 <span class="rec-highlight">최대 2곳</span>으로 줄어들고,
+            우선순위가 명확해집니다: <code>Background Ref > Preset > (VLM은 보조)</code>.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 7: 개선 제안 (IMPROVEMENT PROPOSALS)
+       =================================================================== -->
+  <section id="proposals">
+    <div class="container">
+      <div class="fade-up">
+        <span class="section-label">Section 07</span>
+        <h2>개선 제안</h2>
+        <p class="section-desc">
+          현재 파이프라인의 구조적 한계를 개선하기 위한 3가지 제안입니다.
+        </p>
+      </div>
+
+      <div class="proposal-grid fade-up">
+        <!-- Proposal 1 -->
+        <div class="proposal-card stagger">
+          <div class="proposal-number">01</div>
+          <h3>DNA 영향력 확대</h3>
+          <p>
+            <code>adapt_prompt()</code>가 패치하는 필드를 확대하여
+            DNA Profile의 영향력을 현재 ~15%에서 ~25%로 증가시킵니다.
+          </p>
+          <div class="proposal-detail">
+            <h4>추가 패치 대상</h4>
+            <ul>
+              <li>다리 포즈 (legs position)</li>
+              <li>힙 각도 (hip angle)</li>
+              <li>눈썹 표정 (eyebrow expression)</li>
+              <li>배경 밝기 톤 (background brightness)</li>
+              <li>전체 색감 따뜻함/차가움 (color temperature)</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Proposal 2 -->
+        <div class="proposal-card stagger">
+          <div class="proposal-number">02</div>
+          <h3>변수 간 연결</h3>
+          <p>
+            DNA가 Preset을 참조하여 충돌을 감지하고,
+            모순되는 지시를 자동 조정하는 레이어를 추가합니다.
+          </p>
+          <div class="proposal-detail">
+            <h4>충돌 감지 예시</h4>
+            <ul>
+              <li>Preset="power_stance" + DNA="relaxed" &rarr; DNA 우선 또는 블렌드</li>
+              <li>Preset="smile" + DNA="neutral" &rarr; 가중 평균 적용</li>
+              <li>배경 Preset="studio" + Bg Ref="outdoor" &rarr; Bg Ref 우선</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Proposal 3 -->
+        <div class="proposal-card stagger">
+          <div class="proposal-number">03</div>
+          <h3>배경 통합</h3>
+          <p>
+            배경 결정 로직을 단일 함수 <code>resolve_background()</code>로 통합하여
+            3곳에 분산된 배경 정보를 하나의 파이프라인으로 정리합니다.
+          </p>
+          <div class="proposal-detail">
+            <h4>통합 우선순위</h4>
+            <ul>
+              <li>1순위: Background Ref 이미지 (strict/loose)</li>
+              <li>2순위: Brand Preset background 필드</li>
+              <li>3순위: VLM 배경 분석 (보조 텍스트로만)</li>
+              <li>Fallback: "clean studio background"</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       FOOTER
+       =================================================================== -->
+  <footer class="report-footer">
+    <div class="container">
+      <p>
+        <span class="brand">Brand DNA Pipeline Architecture Report</span><br>
+        fnf-brand-dna &middot; Generated 2026-03-27<br>
+        <span style="color: var(--text-muted);">F&amp;F Digital Lab</span>
+      </p>
+    </div>
+  </footer>
+
+  <!-- ===================================================================
+       JAVASCRIPT
+       =================================================================== -->
+  <script>
+    // ===== Theme Toggle =====
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const html = document.documentElement;
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    html.setAttribute('data-theme', savedTheme);
+    updateIcon(savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+      const current = html.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      updateIcon(next);
+    });
+
+    function updateIcon(theme) {
+      themeIcon.textContent = theme === 'dark' ? '\u263E' : '\u2600';
+    }
+
+    // ===== IntersectionObserver for fade-up =====
+    const fadeElements = document.querySelectorAll('.fade-up');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+
+          // Animate bar chart fills when visible
+          const bars = entry.target.querySelectorAll('.bar-fill[data-width]');
+          bars.forEach(bar => {
+            setTimeout(() => {
+              bar.style.width = bar.dataset.width + '%';
+            }, 300);
+          });
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    fadeElements.forEach(el => observer.observe(el));
+
+    // ===== Smooth scroll for anchor links =====
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
