@@ -1974,15 +1974,33 @@
             <code style="color:var(--text-muted);font-size:0.8rem">없음 (Preset 기본 배경 사용)</code>
           </div>
           <div style="background:var(--bg-card);border-left:3px solid #a78bfa;border-radius:8px;padding:14px">
-            <div style="color:#a78bfa;font-size:0.75rem;font-weight:600;margin-bottom:4px">DNA Profile</div>
-            <div style="color:var(--text-secondary);font-size:0.8rem">
+            <div style="color:#a78bfa;font-size:0.75rem;font-weight:600;margin-bottom:8px">DNA Profile — MLB 겨울 화보 (3장)</div>
+            <div style="color:var(--text-secondary);font-size:0.8rem;margin-bottom:8px">
               Brand: MLB · Strength: 0.8<br>
               Vibe: cool, street, chic, unbothered, mysterious
+            </div>
+            <div style="display:flex;gap:6px">
+              <img src="images/dna_ref_01.jpg" style="width:52px;height:52px;object-fit:cover;border-radius:4px;border:1px solid #444">
+              <img src="images/dna_ref_02.png" style="width:52px;height:52px;object-fit:cover;border-radius:4px;border:1px solid #444">
+              <img src="images/dna_ref_03.png" style="width:52px;height:52px;object-fit:cover;border-radius:4px;border:1px solid #444">
+              <span style="color:var(--text-muted);font-size:0.7rem;align-self:center;margin-left:4px">DNA 추출에 사용된 레퍼런스</span>
             </div>
           </div>
           <div style="background:var(--bg-card);border-left:3px solid #4ecdc4;border-radius:8px;padding:14px">
             <div style="color:#4ecdc4;font-size:0.75rem;font-weight:600;margin-bottom:4px">Brand Preset</div>
             <code style="color:var(--text-secondary);font-size:0.8rem">db/brand_presets/mlb.json</code>
+            <details style="margin-top:8px">
+              <summary style="cursor:pointer;color:#4ecdc4;font-size:0.75rem;user-select:none">▸ Preset 프롬프트 상세</summary>
+              <div style="margin-top:8px;font-size:0.75rem;color:var(--text-secondary);line-height:1.6;background:#111;border-radius:6px;padding:10px">
+                <div><span style="color:var(--text-muted)">pose.stance:</span> power stance, standing tall with confident posture</div>
+                <div><span style="color:var(--text-muted)">pose.왼팔:</span> hand on hip, elbow pointing outward, assertive</div>
+                <div><span style="color:var(--text-muted)">pose.힙:</span> weight shifted to one side, S-curve silhouette</div>
+                <div><span style="color:var(--text-muted)">expression:</span> fierce / confident_chic / direct_intense / closed</div>
+                <div><span style="color:var(--text-muted)">background:</span> clean concrete, metallic accents, cool neutral</div>
+                <div><span style="color:var(--text-muted)">concept:</span> MLB 'Young & Rich' - 프리미엄하고 자신감 있는 느낌</div>
+                <div><span style="color:var(--text-muted)">negative:</span> bright smile, teeth, golden hour, warm amber, weak posture</div>
+              </div>
+            </details>
           </div>
         </div>
       </div>
@@ -2007,6 +2025,42 @@
             <div style="color:var(--text-secondary)">베이스: "fierce"<br>바이브: "confident_chic"<br>시선: "direct_intense"</div>
           </div>
         </div>
+
+        <!-- Preset Detail Toggle -->
+        <details style="margin-top:14px;border-top:1px solid var(--border-subtle);padding-top:12px">
+          <summary style="cursor:pointer;color:#4ecdc4;font-size:0.8rem;font-weight:600;user-select:none">
+            ▸ Preset 상세 + 결과 이미지 반영 분석
+          </summary>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.78rem">
+
+            <div style="background:#111;border-radius:8px;padding:12px">
+              <div style="color:#4ecdc4;font-weight:600;margin-bottom:8px;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em">Preset Prompt</div>
+              <div style="color:var(--text-secondary);line-height:1.7">
+                <div style="margin-bottom:6px"><span style="color:var(--text-muted)">pose.stance:</span><br>"power stance, standing tall with confident posture, weight on one leg"</div>
+                <div style="margin-bottom:6px"><span style="color:var(--text-muted)">pose.왼팔:</span><br>"hand on hip, elbow pointing outward, assertive"</div>
+                <div style="margin-bottom:6px"><span style="color:var(--text-muted)">pose.힙:</span><br>"weight shifted to one side, S-curve silhouette"</div>
+                <div style="margin-bottom:6px"><span style="color:var(--text-muted)">expression.입:</span><br>"closed"</div>
+                <div style="margin-bottom:6px"><span style="color:var(--text-muted)">background:</span><br>"clean concrete floor with metallic accents, industrial minimalist, cool neutral tones"</div>
+                <div><span style="color:var(--text-muted)">negative:</span><br>"bright smile, teeth showing, golden hour, warm amber..."</div>
+              </div>
+            </div>
+
+            <div style="background:#111;border-radius:8px;padding:12px">
+              <div style="color:#4ADE80;font-weight:600;margin-bottom:8px;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em">결과 이미지에서 반영 확인</div>
+              <div style="color:var(--text-secondary);line-height:1.7">
+                <div style="margin-bottom:6px"><span style="color:#4ADE80">✓</span> <strong>hand on hip</strong> — 왼손이 엉덩이에 올려져 있음</div>
+                <div style="margin-bottom:6px"><span style="color:#4ADE80">✓</span> <strong>S-curve silhouette</strong> — 힙 쉬프트로 자연스러운 곡선</div>
+                <div style="margin-bottom:6px"><span style="color:#4ADE80">✓</span> <strong>closed mouth</strong> — 입을 다물고 도도한 표정</div>
+                <div style="margin-bottom:6px"><span style="color:#4ADE80">✓</span> <strong>cool neutral tones</strong> — 배경 전체가 쿨 뉴트럴 그레이</div>
+                <div style="margin-bottom:6px"><span style="color:#4ADE80">✓</span> <strong>concrete industrial</strong> — 미니멀 콘크리트 공간</div>
+                <div style="margin-bottom:6px"><span style="color:#a78bfa">◆</span> <strong>시선: looking_past</strong> — DNA가 direct_intense → looking_past로 패치, 카메라 옆을 바라봄</div>
+                <div><span style="color:#4ADE80">✓</span> <strong>no smile</strong> — 네거티브 프롬프트 반영, 웃음 없음</div>
+              </div>
+            </div>
+
+          </div>
+        </details>
+
       </div>
 
       <!-- Step 2 -->
